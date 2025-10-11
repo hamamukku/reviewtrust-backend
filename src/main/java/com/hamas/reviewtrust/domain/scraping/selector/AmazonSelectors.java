@@ -1,0 +1,1 @@
+// AmazonSelectors.java (placeholder)

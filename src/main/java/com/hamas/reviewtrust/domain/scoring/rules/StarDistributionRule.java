@@ -1,0 +1,1 @@
+// StarDistributionRule.java (placeholder)

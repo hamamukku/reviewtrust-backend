@@ -1,0 +1,1 @@
+// ExcessiveFiveRule.java (placeholder)
