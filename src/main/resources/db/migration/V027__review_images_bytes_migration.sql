@@ -7,4 +7,4 @@ ALTER TABLE IF EXISTS review_images ADD COLUMN IF NOT EXISTS bytes integer NOT N
 
 -- 注意:
 --  - bytes_blob に既存の画像バイナリが残ります（非破壊）。
---  - 後で設計に合わせて移行（例えば S3 に移す等）・削除を行ってください。
+--  - 後で設計に従って移行（例: S3 へ）・削除してください。
