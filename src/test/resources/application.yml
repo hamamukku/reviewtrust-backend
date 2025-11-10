@@ -1,0 +1,21 @@
+security:
+  jwt:
+    # HS256用に32文字以上のランダム文字列（テスト用のダミーでOK）
+    secret: test-secret-0123456789abcdef-0123456789abcd
+
+spring:
+  # テストで定時ジョブを走らせない（外部アクセス抑止）
+  scheduling:
+    enabled: false
+
+  # テストは軽量なインメモリDBで起動。PostgreSQL互換モードにしておくとJPAが楽。
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: none   # 既存DDL/Flyway前提なら none、雛形なら create-drop でも可
+  flyway:
+    enabled: false     # テストでは無効化（必要なら true にしてマイグレーションを用意）

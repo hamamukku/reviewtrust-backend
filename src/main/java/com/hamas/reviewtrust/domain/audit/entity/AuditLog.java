@@ -1,4 +1,3 @@
-// AuditLog.java (placeholder)
 package com.hamas.reviewtrust.domain.audit.entity;
 
 import jakarta.persistence.*;
@@ -72,3 +71,4 @@ public class AuditLog {
     public void setTargetId(UUID targetId) { this.targetId = targetId; }
     public void setMetaJson(String metaJson) { this.metaJson = metaJson; }
 }
+

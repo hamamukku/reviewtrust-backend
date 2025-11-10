@@ -1,4 +1,3 @@
-// ProductTag.java (placeholder)
 package com.hamas.reviewtrust.domain.products.entity;
 
 import jakarta.persistence.*;
@@ -74,3 +73,4 @@ public class ProductTag {
         @Override public int hashCode() { return Objects.hash(productId, tagId); }
     }
 }
+

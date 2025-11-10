@@ -1,4 +1,3 @@
-// LogController.java (placeholder)
 package com.hamas.reviewtrust.api.admin.v1;
 
 import com.hamas.reviewtrust.api.admin.v1.dto.AdminDtos;
@@ -51,3 +50,4 @@ public class LogController {
         return Math.min(limit, 100);
     }
 }
+

@@ -1,4 +1,3 @@
-// Tag.java (placeholder)
 package com.hamas.reviewtrust.domain.products.entity;
 
 import jakarta.persistence.*;
@@ -45,3 +44,4 @@ public class Tag {
     public Instant getCreatedAt() { return createdAt; }
     public void setName(String name) { this.name = name; }
 }
+

@@ -1,0 +1,1 @@
+-- Normalize null star ratings prior to enforcing defaults\nUPDATE reviews SET stars = 0 WHERE stars IS NULL;\n\n-- Ensure future inserts fallback to zero (nullable for backward compatibility)\nALTER TABLE reviews ALTER COLUMN stars SET DEFAULT 0;\n

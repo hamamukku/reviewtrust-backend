@@ -1,4 +1,3 @@
-// TagRepository.java (placeholder)
 package com.hamas.reviewtrust.domain.products.repo;
 
 import com.hamas.reviewtrust.domain.products.entity.Tag;
@@ -17,3 +16,4 @@ public interface TagRepository extends JpaRepository<Tag, UUID> {
 
     List<Tag> findAllByOrderByNameAsc();
 }
+

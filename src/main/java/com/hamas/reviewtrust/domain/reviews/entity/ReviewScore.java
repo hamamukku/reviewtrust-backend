@@ -1,105 +1,123 @@
-// ReviewScore.java (placeholder)
 package com.hamas.reviewtrust.domain.reviews.entity;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.io.Serializable;
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
-/**
- * REVIEW_SCORES（MVP拡張版）
- * - scope: AMAZON | SITE（二系統スコア）
- * - score: 0..100、rank: A/B/C
- * - flags/rules/breakdown: JSON（evidence・内訳）
- * - productId で商品単位の最新スコアを引けるよう冗長保持
- *
- * 仕様整合:
- *  - 二系統スコア表示（商品詳細に amazonScore / userScore を併記） 
- *  - rules/evidence を公開APIで返却（ScoreControllerで使用）
- */
 @Entity
-@Table(name = "review_scores",
-       indexes = {
-           @Index(name = "ix_scores_product_scope_created", columnList = "product_id,scope,created_at"),
-           @Index(name = "ix_scores_review", columnList = "review_id")
-       })
+@Table(name = "review_scores")
 public class ReviewScore {
 
-    public enum Scope { AMAZON, SITE }
-    public enum Rank  { A, B, C }
-
-    @Id
-    @Column(nullable = false, updatable = false)
-    private UUID id;
-
-    /** 冗長保持：商品単位の最新スコア参照を高速化 */
-    @Column(name = "product_id", nullable = false)
-    private UUID productId;
-
-    /** レビュー単位のスコアがある場合に関連付け（集約スコアではNULL可） */
-    @Column(name = "review_id")
-    private UUID reviewId;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 16)
-    private Scope scope;
+    @EmbeddedId
+    private Id id;
 
     @Column(nullable = false)
-    private int score; // 0..100
+    private double score;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 1)
-    private Rank rank; // A/B/C
+    private String rank;
 
-    @Column(name = "flags", columnDefinition = "jsonb")
-    private String flagsJson;
+    @Column(name = "sakura_judge", nullable = false, length = 16)
+    private String sakuraJudge;
 
-    @Column(name = "rules", columnDefinition = "jsonb")
-    private String rulesJson;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "flags", columnDefinition = "jsonb", nullable = false)
+    private JsonNode flags;
 
-    /** 将来：多次元（TRUST/EFFECT/...）の内訳 */
-    @Column(name = "breakdown", columnDefinition = "jsonb")
-    private String breakdownJson;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "rules", columnDefinition = "jsonb", nullable = false)
+    private JsonNode rules;
 
-    @Column(name = "created_at", nullable = false)
-    private Instant createdAt;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "metrics", columnDefinition = "jsonb", nullable = false)
+    private JsonNode metrics;
 
-    protected ReviewScore() { }
+    @Column(name = "computed_at", nullable = false)
+    private Instant computedAt;
 
-    private ReviewScore(UUID id, UUID productId, UUID reviewId, Scope scope, int score, Rank rank,
-                        String flagsJson, String rulesJson, String breakdownJson, Instant createdAt) {
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    protected ReviewScore() {
+    }
+
+    public ReviewScore(Id id, double score, String rank, String sakuraJudge, JsonNode flags,
+                       JsonNode rules, JsonNode metrics, Instant computedAt, Instant updatedAt) {
         this.id = id;
-        this.productId = productId;
-        this.reviewId = reviewId;
-        this.scope = scope;
         this.score = score;
         this.rank = rank;
-        this.flagsJson = flagsJson;
-        this.rulesJson = rulesJson;
-        this.breakdownJson = breakdownJson;
-        this.createdAt = createdAt;
+        this.sakuraJudge = sakuraJudge;
+        this.flags = flags;
+        this.rules = rules;
+        this.metrics = metrics;
+        this.computedAt = computedAt;
+        this.updatedAt = updatedAt;
     }
 
     @PrePersist
     public void onCreate() {
-        if (this.id == null) this.id = UUID.randomUUID();
-        if (this.createdAt == null) this.createdAt = Instant.now();
+        if (computedAt == null) computedAt = Instant.now();
+        if (updatedAt == null) updatedAt = computedAt;
     }
 
-    /** 商品単位の集約スコアを保存する際のファクトリ */
-    public static ReviewScore ofProduct(UUID productId, Scope scope, int score, Rank rank,
-                                        String flagsJson, String rulesJson, String breakdownJson) {
-        return new ReviewScore(null, productId, null, scope, score, rank, flagsJson, rulesJson, breakdownJson, null);
+    @PreUpdate
+    public void onUpdate() {
+        updatedAt = Instant.now();
     }
 
-    // getters
-    public UUID getId() { return id; }
-    public UUID getProductId() { return productId; }
-    public UUID getReviewId() { return reviewId; }
-    public Scope getScope() { return scope; }
-    public int getScore() { return score; }
-    public Rank getRank() { return rank; }
-    public String getFlagsJson() { return flagsJson; }
-    public String getRulesJson() { return rulesJson; }
-    public String getBreakdownJson() { return breakdownJson; }
-    public Instant getCreatedAt() { return createdAt; }
+    public Id getId() { return id; }
+    public double getScore() { return score; }
+    public String getRank() { return rank; }
+    public String getSakuraJudge() { return sakuraJudge; }
+    public JsonNode getFlags() { return flags; }
+    public JsonNode getRules() { return rules; }
+    public JsonNode getMetrics() { return metrics; }
+    public Instant getComputedAt() { return computedAt; }
+    public Instant getUpdatedAt() { return updatedAt; }
+
+    public void setScore(double score) { this.score = score; }
+    public void setRank(String rank) { this.rank = rank; }
+    public void setSakuraJudge(String sakuraJudge) { this.sakuraJudge = sakuraJudge; }
+    public void setFlags(JsonNode flags) { this.flags = flags; }
+    public void setRules(JsonNode rules) { this.rules = rules; }
+    public void setMetrics(JsonNode metrics) { this.metrics = metrics; }
+    public void setComputedAt(Instant computedAt) { this.computedAt = computedAt; }
+
+    @Embeddable
+    public static class Id implements Serializable {
+        @Column(name = "product_id", nullable = false)
+        private UUID productId;
+
+        @Column(name = "source", nullable = false, length = 16)
+        private String source;
+
+        public Id() {
+        }
+
+        public Id(UUID productId, String source) {
+            this.productId = productId;
+            this.source = source;
+        }
+
+        public UUID getProductId() { return productId; }
+        public String getSource() { return source; }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Id id1)) return false;
+            return Objects.equals(productId, id1.productId) && Objects.equals(source, id1.source);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(productId, source);
+        }
+    }
 }

@@ -1,4 +1,3 @@
-// AuditService.java (placeholder)
 package com.hamas.reviewtrust.domain.audit.service;
 
 import com.hamas.reviewtrust.domain.audit.entity.AuditLog;
@@ -68,3 +67,4 @@ public class AuditService {
         return s.length() > 20000 ? s.substring(0, 20000) : s; // 過剰肥大の抑制
     }
 }
+

@@ -1,7 +1,8 @@
-// ProductRepository.java (placeholder)
 package com.hamas.reviewtrust.domain.products.repo;
 
 import com.hamas.reviewtrust.domain.products.entity.Product;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -24,4 +25,24 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
         order by p.updatedAt desc
         """)
     List<Product> search(@Param("q") String q, @Param("visible") Boolean visible);
+
+    @Query("""
+        select p from Product p
+        where (:visible is null or p.visible = :visible)
+          and (:titleQuery is null
+               or lower(p.title) like :titleQuery
+               or lower(p.name) like :titleQuery
+               or upper(p.asin) like :asinQuery)
+          and (:tag is null or exists (
+                select 1 from ProductTag pt
+                where pt.product = p
+                  and lower(pt.tag.name) = :tag
+          ))
+        """)
+    Page<Product> searchWithTag(@Param("visible") Boolean visible,
+                                @Param("titleQuery") String titleQuery,
+                                @Param("asinQuery") String asinQuery,
+                                @Param("tag") String tag,
+                                Pageable pageable);
 }
+

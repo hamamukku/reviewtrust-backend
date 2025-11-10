@@ -1,0 +1,63 @@
+# application-dev.yml (fixed for dev)
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/reviewtrust
+    username: app
+    password: app
+
+  jpa:
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    com.hamas.reviewtrust: DEBUG
+    # Playwright/スクレイピング周りを見たい時は下を一時的に上げる
+    # com.microsoft.playwright: INFO
+    # com.hamas.reviewtrust.domain.scraping: DEBUG
+
+server:
+  port: 8080
+
+security:
+  jwt:
+    # dev 既定（本番は必ず外部注入）
+    secret: dev-secret-at-least-32-chars
+    secretEncoding: raw
+    alg: HS256
+    ttlSeconds: 3600
+
+admin:
+  bootstrap:
+    enabled: true
+    email: admin@example.com
+    # 開発ダミー（本番は安全なBCryptへ必ず差し替え）
+    passwordBcrypt: $2a$10$abcdefghijklmnopqrstuvwxuQkLeQOm8n9xwF9w2E9K2yQ2sO/9n7G
+    roles: ROLE_ADMIN
+
+# ★ ここが修正ポイント：prefix を app.scraping に統一
+app:
+  scraping:
+    enabled: true            # dev では確実にON
+    headless: false          # 目視デバッグ用（必要に応じて true に戻す）
+    channel: ""              # 例: chrome / msedge（未指定なら既定ブラウザ）
+    locale: ja-JP
+    baseUrl: https://www.amazon.co.jp
+    # 認証やCookieを使う場合のみ設定
+    # amazonEmail: ""
+    # amazonPassword: ""
+    # cookieString: ""
+
+# （dev限定）Actuatorのenv/mappingsを露出して設定反映確認をしやすくする
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,mappings,env
+  endpoint:
+    env:
+      enabled: true

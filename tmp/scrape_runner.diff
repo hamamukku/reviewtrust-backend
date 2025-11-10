@@ -1,0 +1,109 @@
+diff --git a/src/main/java/com/hamas/reviewtrust/scraping/ScrapeRunner.java b/src/main/java/com/hamas/reviewtrust/scraping/ScrapeRunner.java
+new file mode 100644
+index 0000000..7134912
+--- /dev/null
++++ b/src/main/java/com/hamas/reviewtrust/scraping/ScrapeRunner.java
+@@ -0,0 +1,103 @@
++package com.hamas.reviewtrust.scraping;
++
++import com.microsoft.playwright.Page;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++import org.springframework.boot.CommandLineRunner;
++import org.springframework.stereotype.Component;
++
++import java.io.IOException;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.time.Duration;
++import java.util.List;
++
++/**
++ * CLI-oriented runner that boots Playwright, iterates URLs, and verifies review presence.
++ */
++@Component
++public class ScrapeRunner implements CommandLineRunner {
++
++    private static final Logger log = LoggerFactory.getLogger(ScrapeRunner.class);
++
++    private final ScrapingProps props;
++    private final CsvUrlIterator csvUrlIterator;
++    private final AmazonReviewScraper scraper;
++
++    public ScrapeRunner(ScrapingProps props,
++                        CsvUrlIterator csvUrlIterator,
++                        AmazonReviewScraper scraper) {
++        this.props = props;
++        this.csvUrlIterator = csvUrlIterator;
++        this.scraper = scraper;
++    }
++
++    @Override
++    public void run(String... args) {
++        if (!props.isEnabled()) {
++            log.info("event=SCRAPE_DISABLED message=app.scraping.enabled=false");
++            return;
++        }
++
++        Path logPath = ensureLogFile();
++        Path csvPath = resolveCsvPath(props.getDataCsvPath());
++        List<String> urls = csvUrlIterator.loadUrls(csvPath).toList();
++        if (urls.isEmpty()) {
++            log.warn("event=SCRAPE_SKIPPED reason=no_urls path={}", csvPath);
++            return;
++        }
++
++        executeScrape(urls, csvPath, logPath);
++    }
++
++    private void executeScrape(List<String> urls, Path csvPath, Path logPath) {
++        log.info("event=SCRAPE_START urls={} csv={} logFile={}", urls.size(), csvPath, logPath);
++        int success = 0;
++        int failed = 0;
++        long started = System.nanoTime();
++
++        try (AmazonBrowserClient client = new AmazonBrowserClient(props)) {
++            client.openContext();
++            Page page = client.getPage();
++            for (String url : urls) {
++                AmazonReviewScraper.Result result = scraper.scrapeOne(page, url);
++                if (result.success()) {
++                    success++;
++                } else {
++                    failed++;
++                }
++            }
++        } catch (Exception e) {
++            log.error("event=SCRAPE_ABORTED message={}", e.getMessage(), e);
++            throw e;
++        } finally {
++            long durationMs = Duration.ofNanos(System.nanoTime() - started).toMillis();
++            log.info("event=SCRAPE_COMPLETED success={} failed={} durationMs={}", success, failed, durationMs);
++        }
++    }
++
++    private Path resolveCsvPath(String configured) {
++        Path path = Path.of(configured == null || configured.isBlank() ? "../data/urls.csv" : configured);
++        return path.toAbsolutePath().normalize();
++    }
++
++    private Path ensureLogFile() {
++        String configured = System.getProperty("logging.file.name");
++        if (configured == null || configured.isBlank()) {
++            configured = "build/logs/app.log";
++        }
++        Path path = Path.of(configured).toAbsolutePath().normalize();
++        try {
++            Path parent = path.getParent();
++            if (parent != null) {
++                Files.createDirectories(parent);
++            }
++            if (!Files.exists(path)) {
++                Files.createFile(path);
++            }
++        } catch (IOException e) {
++            log.warn("event=LOG_FILE_PREP_FAILED path={} message={}", path, e.getMessage());
++        }
++        return path;
++    }
++}

@@ -1,1 +1,74 @@
-# application-dev.yml (placeholder)
+spring:
+  datasource:
+    url: jdbc:postgresql://127.0.0.1:5432/reviewtrust
+    username: app
+    password: app
+
+  jpa:
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    com.hamas.reviewtrust: DEBUG
+    com.microsoft.playwright: INFO   # 必要なら DEBUG まで上げてOK
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE
+
+server:
+  port: 8080
+
+security:
+  jwt:
+    secret: K7u$93dA4xTq!rVbN1e^pZ6sM2@fY0gW
+    secretEncoding: raw
+    alg: HS256
+    ttlSeconds: 3600
+
+admin:
+  bootstrap:
+    enabled: true
+    email: admin@example.com
+    passwordBcrypt: $2a$10$abcdefghijklmnopqrstuvwxuQkLeQOm8n9xwF9w2E9K2yQ2sO/9n7G
+    roles: ROLE_ADMIN
+
+# ← ここにあった app.scraping は削除（競合回避）
+
+scraping:
+  intake:
+    auto: false
+  amazon:
+    enableBrowserLogin: true               # stateで足りないときの人手ログイン許可
+    reviewsBase: "https://www.amazon.co.jp/product-reviews"
+    storageStatePath: "${AMAZON_STATE_PATH:C:/reviewtrust/amazon_state.json}"
+    email: "riku.hamasaki1220@gmail.com"  # dev用途。将来は環境変数へ退避推奨
+    password: "RikuMukku320"              # 同上
+    headless: true                        # 収集は基本 headless。デバッグ時は false
+    timeoutMs: 45000
+    locale: "ja-JP"
+    userAgent: ""                         # 必要なら実ブラウザ相当に明示
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,mappings,env
+  endpoint:
+    env:
+      enabled: true
+    mappings:
+      enabled: true
+    health:
+      show-details: always
+
+intake:
+  review:
+    dirs:
+      - "F:/レビュースコア/backend/delivery/proof/adhoc"
+      - "delivery/review-inbox"
+  local:
+    csv-path: data/urls.csv
+    remote-base-url: ""

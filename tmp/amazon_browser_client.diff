@@ -1,0 +1,284 @@
+diff --git a/src/main/java/com/hamas/reviewtrust/scraping/AmazonBrowserClient.java b/src/main/java/com/hamas/reviewtrust/scraping/AmazonBrowserClient.java
+new file mode 100644
+index 0000000..1d1342e
+--- /dev/null
++++ b/src/main/java/com/hamas/reviewtrust/scraping/AmazonBrowserClient.java
+@@ -0,0 +1,278 @@
++package com.hamas.reviewtrust.scraping;
++
++import com.microsoft.playwright.Browser;
++import com.microsoft.playwright.BrowserContext;
++import com.microsoft.playwright.BrowserType;
++import com.microsoft.playwright.Page;
++import com.microsoft.playwright.Playwright;
++import com.microsoft.playwright.PlaywrightException;
++import com.microsoft.playwright.options.LoadState;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++import org.springframework.util.StringUtils;
++
++import java.io.IOException;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.time.Duration;
++import java.util.List;
++import java.util.Locale;
++import java.util.Optional;
++
++/**
++ * Handles Playwright lifecycle and keeps the login session via storageState.
++ */
++public class AmazonBrowserClient implements AutoCloseable {
++
++    private static final Logger log = LoggerFactory.getLogger(AmazonBrowserClient.class);
++    private static final String AMAZON_HOME = "https://www.amazon.co.jp/";
++    private static final List<String> CONSENT_SELECTORS = List.of(
++            "button:has-text(\"蜷梧э縺励※邯夊｡圭")",
++            "#sp-cc-accept"
++    );
++    private static final List<String> OTP_SELECTORS = List.of(
++            "#auth-mfa-otpcode",
++            "input[name='otpCode']",
++            "input[name='code']"
++    );
++
++    private final ScrapingProps props;
++    private Playwright playwright;
++    private Browser browser;
++    private BrowserContext context;
++    private Page page;
++    private boolean opened;
++
++    public AmazonBrowserClient(ScrapingProps props) {
++        this.props = props;
++    }
++
++    public synchronized BrowserContext openContext() {
++        if (opened) {
++            return context;
++        }
++        try {
++            playwright = Playwright.create();
++            BrowserType.LaunchOptions launchOptions = new BrowserType.LaunchOptions()
++                    .setHeadless(props.isHeadless());
++            String channel = props.getChannel();
++            if (channel != null && !channel.isBlank()) {
++                launchOptions.setChannel(channel);
++            }
++            browser = playwright.chromium().launch(launchOptions);
++
++            Path storagePath = resolveStoragePath();
++            boolean hasStorage = Files.exists(storagePath);
++            boolean loginPerformed = false;
++
++            Browser.NewContextOptions ctxOptions = new Browser.NewContextOptions();
++            if (hasStorage) {
++                ctxOptions.setStorageStatePath(storagePath);
++                log.info("event=STORAGESTATE_LOADED path={}", storagePath);
++            } else {
++                log.info("event=STORAGESTATE_MISSING path={}", storagePath);
++            }
++
++            context = browser.newContext(ctxOptions);
++            page = context.newPage();
++            page.setDefaultTimeout(Duration.ofSeconds(30).toMillis());
++            page.navigate(AMAZON_HOME);
++            waitForNetworkIdle(page);
++            maybeAcceptConsent(page);
++
++            if (!isLoggedIn(page)) {
++                ensureCredentials();
++                performLogin(page);
++                loginPerformed = true;
++                waitForNetworkIdle(page);
++                if (!isLoggedIn(page)) {
++                    throw new IllegalStateException("Amazon login verification failed");
++                }
++            }
++
++            if (loginPerformed || !Files.exists(storagePath)) {
++                persistStorageState(storagePath);
++            }
++
++            opened = true;
++            return context;
++        } catch (RuntimeException e) {
++            closeSilently();
++            throw e;
++        }
++    }
++
++    public Page getPage() {
++        return page;
++    }
++
++    public BrowserContext getContext() {
++        return context;
++    }
++
++    @Override
++    public void close() {
++        closeSilently();
++    }
++
++    private void closeSilently() {
++        closeQuietly(page);
++        closeQuietly(context);
++        closeQuietly(browser);
++        closeQuietly(playwright);
++        page = null;
++        context = null;
++        browser = null;
++        playwright = null;
++    }
++
++    private Path resolveStoragePath() {
++        Path storagePath = Path.of(props.getStorageStatePath()).toAbsolutePath().normalize();
++        try {
++            Path parent = storagePath.getParent();
++            if (parent != null) {
++                Files.createDirectories(parent);
++            }
++        } catch (IOException e) {
++            throw new IllegalStateException("Failed to prepare storage state directory", e);
++        }
++        return storagePath;
++    }
++
++    private void maybeAcceptConsent(Page page) {
++        for (String selector : CONSENT_SELECTORS) {
++            try {
++                if (page.locator(selector).count() > 0 && page.locator(selector).first().isVisible()) {
++                    page.locator(selector).first().click();
++                    waitForNetworkIdle(page);
++                    log.info("event=CONSENT_CLICKED selector={}", selector);
++                    return;
++                }
++            } catch (PlaywrightException e) {
++                log.debug("Consent selector not clickable selector={} message={}", selector, e.getMessage());
++            }
++        }
++    }
++
++    private boolean isLoggedIn(Page page) {
++        try {
++            var locator = page.locator("#nav-link-accountList");
++            if (locator.count() == 0) {
++                return false;
++            }
++            String text = locator.first().innerText().toLowerCase(Locale.ROOT);
++            return !(text.contains("sign in") || text.contains("繝ｭ繧ｰ繧､繝ｳ") || text.contains("繧ｵ繧､繝ｳ繧､繝ｳ"));
++        } catch (PlaywrightException e) {
++            log.debug("Failed to resolve login status message={}", e.getMessage());
++            return false;
++        }
++    }
++
++    private void ensureCredentials() {
++        if (!StringUtils.hasText(props.getAmazonEmail()) || !StringUtils.hasText(props.getAmazonPassword())) {
++            throw new IllegalStateException("Amazon credentials are required for initial login");
++        }
++    }
++
++    private void performLogin(Page page) {
++        page.locator("#nav-link-accountList").first().click();
++        waitForNetworkIdle(page);
++        page.waitForSelector("#ap_email").fill(props.getAmazonEmail());
++        page.locator("#continue").click();
++        page.waitForSelector("#ap_password").fill(props.getAmazonPassword());
++        page.locator("#signInSubmit").click();
++        waitForNetworkIdle(page);
++        handleTwoFactorIfNeeded(page);
++        log.info("event=LOGIN_PERFORMED user={}", maskEmail(props.getAmazonEmail()));
++    }
++
++    private void handleTwoFactorIfNeeded(Page page) {
++        Optional.ofNullable(findFirstVisible(page, OTP_SELECTORS)).ifPresent(locator -> {
++            String otp = System.getenv("AMZN_OTP");
++            if (StringUtils.hasText(otp)) {
++                locator.fill(otp.trim());
++                locator.press("Enter");
++                waitForNetworkIdle(page);
++                log.info("event=MFA_SUBMITTED source=env");
++            } else {
++                log.info("event=MFA_WAITING timeoutSeconds=120");
++                waitForOtpCompletion(locator, page);
++            }
++        });
++    }
++
++    private com.microsoft.playwright.Locator findFirstVisible(Page page, List<String> selectors) {
++        for (String selector : selectors) {
++            var loc = page.locator(selector);
++            if (loc.count() > 0) {
++                try {
++                    if (loc.first().isVisible()) {
++                        return loc.first();
++                    }
++                } catch (PlaywrightException ignored) {
++                }
++            }
++        }
++        return null;
++    }
++
++    private void waitForOtpCompletion(com.microsoft.playwright.Locator locator, Page page) {
++        long deadline = System.nanoTime() + Duration.ofSeconds(120).toNanos();
++        while (System.nanoTime() < deadline) {
++            try {
++                if (!locator.isVisible() || isLoggedIn(page)) {
++                    break;
++                }
++            } catch (PlaywrightException ignored) {
++                break;
++            }
++            page.waitForTimeout(2000);
++        }
++    }
++
++    private void persistStorageState(Path storagePath) {
++        try {
++            context.storageState(new BrowserContext.StorageStateOptions().setPath(storagePath));
++            log.info("event=STORAGESTATE_SAVED path={}", storagePath);
++        } catch (PlaywrightException e) {
++            throw new IllegalStateException("Failed to persist storage state", e);
++        }
++    }
++
++    private void waitForNetworkIdle(Page page) {
++        try {
++            page.waitForLoadState(LoadState.NETWORKIDLE);
++        } catch (PlaywrightException e) {
++            log.debug("Network idle wait interrupted message={}", e.getMessage());
++        }
++    }
++
++    private void closeQuietly(Object resource) {
++        if (resource == null) {
++            return;
++        }
++        try {
++            if (resource instanceof Page p) {
++                p.close();
++            } else if (resource instanceof BrowserContext c) {
++                c.close();
++            } else if (resource instanceof Browser b) {
++                b.close();
++            } else if (resource instanceof Playwright pw) {
++                pw.close();
++            }
++        } catch (Exception ignored) {
++        }
++    }
++
++    private String maskEmail(String email) {
++        if (!StringUtils.hasText(email)) {
++            return "-";
++        }
++        int at = email.indexOf('@');
++        if (at <= 1) {
++            return "***";
++        }
++        return email.charAt(0) + "***" + email.substring(at);
++    }
++}

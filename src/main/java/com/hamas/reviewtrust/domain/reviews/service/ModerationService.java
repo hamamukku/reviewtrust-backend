@@ -1,4 +1,3 @@
-// ModerationService.java (placeholder)
 package com.hamas.reviewtrust.domain.reviews.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,8 +18,8 @@ import java.util.UUID;
 
 /**
  * 管理向けの承認/非承認サービス。
- * - approve(id, reason)  : status=DRAFT → PUBLISHED
- * - reject(id,  reason)  : status=DRAFT → REJECTED
+ * - approve(id, reason)  : status=PENDING/DRAFT → APPROVED
+ * - reject(id,  reason)  : status=PENDING/DRAFT → REJECTED
  * 監査ログに action=REVIEW_APPROVED / REVIEW_REJECTED を記録（MVPの監査要件）。 
  */
 @Service
@@ -38,8 +37,8 @@ public class ModerationService {
 
     @Transactional
     public Review approve(UUID reviewId, String reason) {
-        Review r = loadDraft(reviewId);
-        r.setStatus(Review.Status.PUBLISHED);
+        Review r = loadPending(reviewId);
+        r.setStatus(Review.Status.APPROVED);
         repo.save(r);
 
         recordAudit("REVIEW_APPROVED", r, reason);
@@ -48,7 +47,7 @@ public class ModerationService {
 
     @Transactional
     public Review reject(UUID reviewId, String reason) {
-        Review r = loadDraft(reviewId);
+        Review r = loadPending(reviewId);
         r.setStatus(Review.Status.REJECTED);
         repo.save(r);
 
@@ -58,11 +57,11 @@ public class ModerationService {
 
     // ---- helpers ----
 
-    private Review loadDraft(UUID id) {
+    private Review loadPending(UUID id) {
         Review r = repo.findById(id).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "review not found"));
-        if (r.getStatus() != Review.Status.DRAFT) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "review is not draft");
+        if (r.getStatus() != Review.Status.DRAFT && r.getStatus() != Review.Status.PENDING) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "review is not pending");
         }
         return r;
     }
@@ -90,3 +89,4 @@ public class ModerationService {
 
     private String nz(String s) { return StringUtils.hasText(s) ? s : null; }
 }
+

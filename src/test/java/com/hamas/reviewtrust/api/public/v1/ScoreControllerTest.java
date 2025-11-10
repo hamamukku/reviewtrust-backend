@@ -1,1 +1,0 @@
-// ScoreControllerTest.java (placeholder)

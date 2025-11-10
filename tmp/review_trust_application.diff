@@ -1,0 +1,22 @@
+diff --git a/src/main/java/com/hamas/reviewtrust/ReviewTrustApplication.java b/src/main/java/com/hamas/reviewtrust/ReviewTrustApplication.java
+new file mode 100644
+index 0000000..e9af5c0
+--- /dev/null
++++ b/src/main/java/com/hamas/reviewtrust/ReviewTrustApplication.java
+@@ -0,0 +1,16 @@
++package com.hamas.reviewtrust;
++
++import com.hamas.reviewtrust.config.ScrapingProperties;
++import com.hamas.reviewtrust.scraping.ScrapingProps;
++import org.springframework.boot.SpringApplication;
++import org.springframework.boot.autoconfigure.SpringBootApplication;
++import org.springframework.boot.context.properties.EnableConfigurationProperties;
++
++@SpringBootApplication
++@EnableConfigurationProperties({ScrapingProps.class, ScrapingProperties.class})
++public class ReviewTrustApplication {
++
++    public static void main(String[] args) {
++        SpringApplication.run(ReviewTrustApplication.class, args);
++    }
++}

@@ -1,4 +1,3 @@
-// AdminDtos.java (placeholder)
 package com.hamas.reviewtrust.api.admin.v1.dto;
 
 import com.hamas.reviewtrust.domain.audit.entity.AuditLog;
@@ -51,3 +50,4 @@ public final class AdminDtos {
 
     private AdminDtos() { }
 }
+

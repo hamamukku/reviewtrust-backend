@@ -1,4 +1,3 @@
-// ProductMapper.java (placeholder)
 package com.hamas.reviewtrust.domain.products.mapper;
 
 import com.hamas.reviewtrust.api.publicapi.v1.dto.ProductDtos.ProductDetail;
@@ -26,3 +25,4 @@ public final class ProductMapper {
         );
     }
 }
+

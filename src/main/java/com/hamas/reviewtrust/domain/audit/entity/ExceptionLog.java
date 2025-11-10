@@ -1,4 +1,3 @@
-// ExceptionLog.java (placeholder)
 package com.hamas.reviewtrust.domain.audit.entity;
 
 import jakarta.persistence.*;
@@ -72,3 +71,4 @@ public class ExceptionLog {
     public void setMessage(String message) { this.message = message; }
     public void setStack(String stack) { this.stack = stack; }
 }
+

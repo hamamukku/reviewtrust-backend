@@ -1,0 +1,126 @@
+      table_name       |   column_name    |          data_type          
+-----------------------+------------------+-----------------------------
+ admin_users           | id               | uuid
+ admin_users           | username         | character varying
+ admin_users           | password_hash    | text
+ admin_users           | enabled          | boolean
+ admin_users           | created_at       | timestamp with time zone
+ admin_users           | updated_at       | timestamp with time zone
+ admin_users           | email            | character varying
+ admin_users           | roles            | character varying
+ audit_logs            | id               | uuid
+ audit_logs            | event_time       | timestamp with time zone
+ audit_logs            | actor_username   | character varying
+ audit_logs            | actor_user_id    | uuid
+ audit_logs            | action           | character varying
+ audit_logs            | resource_type    | character varying
+ audit_logs            | resource_id      | uuid
+ audit_logs            | ip_address       | inet
+ audit_logs            | user_agent       | text
+ audit_logs            | detail           | jsonb
+ audit_logs            | created_at       | timestamp with time zone
+ audit_logs            | actor_id         | uuid
+ audit_logs            | meta             | jsonb
+ audit_logs            | target_type      | character varying
+ audit_logs            | target_id        | uuid
+ exception_logs        | id               | uuid
+ exception_logs        | occurred_at      | timestamp with time zone
+ exception_logs        | service_name     | character varying
+ exception_logs        | level            | character varying
+ exception_logs        | message          | text
+ exception_logs        | stacktrace       | text
+ exception_logs        | actor_id         | uuid
+ exception_logs        | meta             | jsonb
+ exception_logs        | created_at       | timestamp with time zone
+ exception_logs        | error_code       | character varying
+ exception_logs        | error_type       | character varying
+ exception_logs        | context          | jsonb
+ exception_logs        | job_id           | uuid
+ exception_logs        | scope            | character varying
+ exception_logs        | stack            | text
+ flyway_schema_history | installed_rank   | integer
+ flyway_schema_history | version          | character varying
+ flyway_schema_history | description      | character varying
+ flyway_schema_history | type             | character varying
+ flyway_schema_history | script           | character varying
+ flyway_schema_history | checksum         | integer
+ flyway_schema_history | installed_by     | character varying
+ flyway_schema_history | installed_on     | timestamp without time zone
+ flyway_schema_history | execution_time   | integer
+ flyway_schema_history | success          | boolean
+ product_tags          | product_id       | uuid
+ product_tags          | tag_id           | uuid
+ product_tags          | created_at       | timestamp with time zone
+ products              | id               | uuid
+ products              | external_id      | character varying
+ products              | name             | text
+ products              | brand            | character varying
+ products              | category         | character varying
+ products              | created_at       | timestamp with time zone
+ products              | updated_at       | timestamp with time zone
+ products              | asin             | character varying
+ products              | title            | text
+ products              | visible          | boolean
+ products              | url              | text
+ review_images         | id               | uuid
+ review_images         | review_id        | uuid
+ review_images         | url              | text
+ review_images         | width            | integer
+ review_images         | height           | integer
+ review_images         | created_at       | timestamp with time zone
+ review_images         | bytes_blob       | bytea
+ review_images         | bytes            | integer
+ review_images         | path             | text
+ review_scores         | id               | uuid
+ review_scores         | review_id        | uuid
+ review_scores         | score            | integer
+ review_scores         | score_label      | character varying
+ review_scores         | reason           | jsonb
+ review_scores         | computed_at      | timestamp with time zone
+ review_scores         | breakdown        | jsonb
+ review_scores         | created_at       | timestamp with time zone
+ review_scores         | flags            | jsonb
+ review_scores         | product_id       | uuid
+ review_scores         | rank             | character
+ review_scores         | rules            | jsonb
+ review_scores         | scope            | text
+ reviews               | id               | uuid
+ reviews               | product_id       | uuid
+ reviews               | author           | character varying
+ reviews               | author_id        | character varying
+ reviews               | rating           | integer
+ reviews               | title            | text
+ reviews               | body             | text
+ reviews               | created_at       | timestamp with time zone
+ reviews               | scraped_at       | timestamp with time zone
+ reviews               | fingerprint      | character varying
+ reviews               | raw              | jsonb
+ reviews               | created_by       | uuid
+ reviews               | updated_at       | timestamp with time zone
+ reviews               | has_image        | boolean
+ reviews               | proof_image_path | text
+ reviews               | reviewer_meta    | jsonb
+ reviews               | reviewer_name    | text
+ reviews               | reviewer_public  | boolean
+ reviews               | source           | text
+ scoring_profiles      | id               | uuid
+ scoring_profiles      | name             | character varying
+ scoring_profiles      | description      | text
+ scoring_profiles      | rules            | jsonb
+ scoring_profiles      | active           | boolean
+ scoring_profiles      | created_at       | timestamp with time zone
+ scoring_profiles      | updated_at       | timestamp with time zone
+ scrape_jobs           | id               | uuid
+ scrape_jobs           | product_id       | uuid
+ scrape_jobs           | status           | character varying
+ scrape_jobs           | attempt_count    | integer
+ scrape_jobs           | last_error       | text
+ scrape_jobs           | scheduled_at     | timestamp with time zone
+ scrape_jobs           | started_at       | timestamp with time zone
+ scrape_jobs           | finished_at      | timestamp with time zone
+ scrape_jobs           | created_at       | timestamp with time zone
+ tags                  | id               | uuid
+ tags                  | name             | character varying
+ tags                  | created_at       | timestamp with time zone
+(122 rows)
+

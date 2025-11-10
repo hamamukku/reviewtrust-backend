@@ -1,4 +1,3 @@
-// Review.java (placeholder)
 package com.hamas.reviewtrust.domain.reviews.entity;
 
 import jakarta.persistence.*;
@@ -24,8 +23,8 @@ import java.util.UUID;
        })
 public class Review {
 
-    public enum Source { AMAZON, SITE }
-    public enum Status { DRAFT, PUBLISHED, REJECTED }
+    public enum Source { AMAZON, SITE, USER }
+    public enum Status { DRAFT, PUBLISHED, REJECTED, PENDING, APPROVED }
 
     @Id
     @Column(nullable = false, updatable = false)
@@ -42,11 +41,20 @@ public class Review {
     @Column(nullable = false, length = 16)
     private Status status;
 
-    @Column(nullable = false)
-    private int stars; // 1..5
+    @Column(name = "stars")
+    private Integer stars;
 
-    @Column(columnDefinition = "text", nullable = false)
+    @Column(name = "text", columnDefinition = "text", nullable = false)
     private String text;
+
+    @Column(name = "title")
+    private String title;
+
+    @Column(name = "body", columnDefinition = "text")
+    private String body;
+
+    @Column(name = "posted_at")
+    private Instant postedAt;
 
     @Column(name = "verified_purchase", nullable = false)
     private boolean verifiedPurchase;
@@ -69,9 +77,9 @@ public class Review {
     @Column(name = "reviewer_meta", columnDefinition = "jsonb")
     private String reviewerMetaJson;
 
-    /** 購入証明の保存パス（SITE投稿は必須） */
+    /** 購入証明の保存パス（SITE/USER投稿向け） */
     @Column(name = "proof_image_path")
-    private String proofImagePath;
+    private String proofUrl;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -81,9 +89,9 @@ public class Review {
 
     protected Review() { }
 
-    private Review(UUID id, UUID productId, Source source, Status status, int stars, String text,
+    private Review(UUID id, UUID productId, Source source, Status status, Integer stars, String text,
                    boolean verifiedPurchase, boolean hasImage, String userRef, String reviewerName,
-                   Boolean reviewerPublic, String reviewerMetaJson, String proofImagePath,
+                   Boolean reviewerPublic, String reviewerMetaJson, String proofUrl,
                    Instant createdAt, Instant updatedAt) {
         this.id = id;
         this.productId = productId;
@@ -91,13 +99,16 @@ public class Review {
         this.status = status;
         this.stars = stars;
         this.text = text;
+        this.title = null;
+        this.body = text;
+        this.postedAt = null;
         this.verifiedPurchase = verifiedPurchase;
         this.hasImage = hasImage;
         this.userRef = userRef;
         this.reviewerName = reviewerName;
         this.reviewerPublic = reviewerPublic;
         this.reviewerMetaJson = reviewerMetaJson;
-        this.proofImagePath = proofImagePath;
+        this.proofUrl = proofUrl;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -119,10 +130,30 @@ public class Review {
     public static Review siteDraft(UUID productId, int stars, String text, String proofImagePath,
                                    String reviewerName, Boolean reviewerPublic, String userRef) {
         return new Review(
-                null, productId, Source.SITE, Status.DRAFT, stars, text,
+                null, productId, Source.SITE, Status.PENDING, stars, text,
                 true, true, userRef, reviewerName, reviewerPublic, null,
                 proofImagePath, null, null
         );
+    }
+
+    /** USER投稿（proofは任意）を作成 */
+    public static Review userSubmission(UUID productId, int stars, String title, String body,
+                                        boolean hasProof, String proofUrl, Instant clockNow) {
+        Review review = new Review();
+        review.productId = productId;
+        review.source = Source.USER;
+        review.status = Status.PENDING;
+        review.stars = Integer.valueOf(stars);
+        review.title = title;
+        review.body = body;
+        review.text = body;
+        review.postedAt = clockNow;
+        review.verifiedPurchase = hasProof;
+        review.hasImage = hasProof;
+        review.proofUrl = proofUrl;
+        review.createdAt = clockNow;
+        review.updatedAt = clockNow;
+        return review;
     }
 
     // --- getters / setters ---
@@ -130,18 +161,36 @@ public class Review {
     public UUID getProductId() { return productId; }
     public Source getSource() { return source; }
     public Status getStatus() { return status; }
-    public int getStars() { return stars; }
+    public Integer getStars() { return stars; }
     public String getText() { return text; }
+    public String getTitle() { return title; }
+    public String getBody() { return body; }
+    public Instant getPostedAt() { return postedAt; }
     public boolean isVerifiedPurchase() { return verifiedPurchase; }
     public boolean isHasImage() { return hasImage; }
     public String getUserRef() { return userRef; }
     public String getReviewerName() { return reviewerName; }
     public Boolean getReviewerPublic() { return reviewerPublic; }
     public String getReviewerMetaJson() { return reviewerMetaJson; }
-    public String getProofImagePath() { return proofImagePath; }
+    public String getProofUrl() { return proofUrl; }
+    @Deprecated
+    public String getProofImagePath() { return proofUrl; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
 
     public void setStatus(Status status) { this.status = status; }
     public void setReviewerMetaJson(String reviewerMetaJson) { this.reviewerMetaJson = reviewerMetaJson; }
+
+    public void setStars(Integer stars) { this.stars = stars; }
+    public void setStars(int stars) { this.stars = Integer.valueOf(stars); }
+    public void setTitle(String title) { this.title = title; }
+    public void setBody(String body) { this.body = body; }
+    public void setPostedAt(Instant postedAt) { this.postedAt = postedAt; }
+    public void setProofUrl(String proofUrl) { this.proofUrl = proofUrl; }
+    public void setSource(Source source) { this.source = source; }
+    public void setProductId(UUID productId) { this.productId = productId; }
+    public void setVerifiedPurchase(boolean verifiedPurchase) { this.verifiedPurchase = verifiedPurchase; }
+    public void setHasImage(boolean hasImage) { this.hasImage = hasImage; }
+    public void setText(String text) { this.text = text; }
 }
+

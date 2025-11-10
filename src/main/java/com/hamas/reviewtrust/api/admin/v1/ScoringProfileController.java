@@ -1,4 +1,3 @@
-// ScoringProfileController.java (placeholder)
 package com.hamas.reviewtrust.api.admin.v1;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -52,3 +51,4 @@ public class ScoringProfileController {
         }
     }
 }
+

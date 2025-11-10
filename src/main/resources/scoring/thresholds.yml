@@ -1,1 +1,52 @@
-# thresholds.yml (placeholder)
+weights:
+  dist_bias: 0.35
+  duplicates: 0.35
+  surge: 0.2
+  noise: 0.1
+
+dist_bias:
+  warn: 0.35
+  crit: 0.6
+
+duplicates:
+  warn: 0.3
+  crit: 0.5
+
+surge_z:
+  warn: 1.8
+  crit: 3.0
+
+noise:
+  warn: 0.25
+  crit: 0.5
+
+sakura_judge:
+  dist_bias_sakura: 0.8
+  dist_bias_likely: 0.65
+  dist_bias_unlikely: 0.45
+  duplicate_sakura: 0.5
+  duplicate_likely: 0.4
+
+feature_percent:
+  dist_bias:
+    warn: 65
+    crit: 80
+  duplicates:
+    warn: 40
+    crit: 55
+  surge:
+    warn: 40
+    crit: 65
+  noise:
+    warn: 35
+    crit: 55
+
+sakura_percent:
+  sakura:
+    dist_bias: 80
+    duplicates: 50
+  likely:
+    dist_bias: 65
+    duplicates: 40
+  unlikely:
+    dist_bias: 45

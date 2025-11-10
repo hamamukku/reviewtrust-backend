@@ -1,4 +1,3 @@
-// ScrapingExceptions.java (placeholder)
 package com.hamas.reviewtrust.domain.scraping.exception;
 
 /**
@@ -41,3 +40,4 @@ public final class ScrapingExceptions {
         return new ScrapeException("E_SCRAPE_FAILED", msg, cause);
     }
 }
+

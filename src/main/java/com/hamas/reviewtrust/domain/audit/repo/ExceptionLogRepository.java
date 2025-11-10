@@ -1,4 +1,3 @@
-// ExceptionLogRepository.java (placeholder)
 package com.hamas.reviewtrust.domain.audit.repo;
 
 import com.hamas.reviewtrust.domain.audit.entity.ExceptionLog;
@@ -13,3 +12,4 @@ public interface ExceptionLogRepository extends JpaRepository<ExceptionLog, UUID
     List<ExceptionLog> findTop100ByOrderByCreatedAtDesc();
     List<ExceptionLog> findByScopeOrderByCreatedAtDesc(String scope);
 }
+

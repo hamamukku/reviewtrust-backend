@@ -1,4 +1,3 @@
-// AuditLogRepository.java (placeholder)
 package com.hamas.reviewtrust.domain.audit.repo;
 
 import com.hamas.reviewtrust.domain.audit.entity.AuditLog;
@@ -13,3 +12,4 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
     List<AuditLog> findTop100ByOrderByCreatedAtDesc();
     List<AuditLog> findByTargetTypeAndTargetIdOrderByCreatedAtDesc(String targetType, UUID targetId);
 }
+

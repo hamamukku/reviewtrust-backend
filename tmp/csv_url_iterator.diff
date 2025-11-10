@@ -1,0 +1,164 @@
+diff --git a/src/main/java/com/hamas/reviewtrust/scraping/CsvUrlIterator.java b/src/main/java/com/hamas/reviewtrust/scraping/CsvUrlIterator.java
+new file mode 100644
+index 0000000..e337747
+--- /dev/null
++++ b/src/main/java/com/hamas/reviewtrust/scraping/CsvUrlIterator.java
+@@ -0,0 +1,158 @@
++package com.hamas.reviewtrust.scraping;
++
++import org.apache.commons.csv.CSVFormat;
++import org.apache.commons.csv.CSVParser;
++import org.apache.commons.csv.CSVRecord;
++import org.slf4j.Logger;
++import org.slf4j.LoggerFactory;
++import org.springframework.stereotype.Component;
++
++import java.io.BufferedReader;
++import java.io.InputStreamReader;
++import java.io.PushbackInputStream;
++import java.io.Reader;
++import java.net.URI;
++import java.nio.charset.Charset;
++import java.nio.charset.MalformedInputException;
++import java.nio.charset.StandardCharsets;
++import java.nio.file.Files;
++import java.nio.file.Path;
++import java.util.ArrayList;
++import java.util.HashMap;
++import java.util.LinkedHashSet;
++import java.util.List;
++import java.util.Locale;
++import java.util.Map;
++import java.util.Set;
++import java.util.stream.Stream;
++
++/**
++ * Loads URLs from CSV. Robust to UTF-8/CP932 and header name variations.
++ */
++@Component
++public class CsvUrlIterator {
++
++    private static final Logger log = LoggerFactory.getLogger(CsvUrlIterator.class);
++
++    private static final List<String> URL_CANDIDATES = List.of(
++            "url", "urls", "product_url", "canonical_url", "asin_url",
++            "link", "href", "URL", "蝠・刀URL", "繝ｪ繝ｳ繧ｯ"
++    );
++
++    public Stream<String> loadUrls(Path csvPath) {
++        if (csvPath == null) {
++            log.warn("event=CSV_PATH_MISSING message=CSV path was null");
++            return Stream.empty();
++        }
++        if (!Files.exists(csvPath)) {
++            log.error("event=CSV_NOT_FOUND path={}", csvPath.toAbsolutePath());
++            return Stream.empty();
++        }
++
++        for (Charset cs : List.of(StandardCharsets.UTF_8, Charset.forName("MS932"))) {
++            try {
++                return readWithCharset(csvPath, cs).stream();
++            } catch (MalformedInputException mie) {
++                log.info("event=CSV_CHARSET_FALLBACK path={} from=UTF-8 to=MS932", csvPath.toAbsolutePath());
++            } catch (Exception e) {
++                log.error("event=CSV_READ_FAILED path={} charset={}", csvPath, cs, e);
++                return Stream.empty();
++            }
++        }
++        return Stream.empty();
++    }
++
++    private List<String> readWithCharset(Path csvPath, Charset cs) throws Exception {
++        List<String> urls = new ArrayList<>();
++        String header = null;
++
++        try (Reader reader = bomAwareReader(csvPath, cs);
++             CSVParser parser = CSVFormat.DEFAULT
++                     .withFirstRecordAsHeader()
++                     .withIgnoreHeaderCase()
++                     .withTrim()
++                     .withIgnoreEmptyLines()
++                     .parse(reader)) {
++
++            header = pickUrlHeader(parser.getHeaderMap().keySet());
++            for (CSVRecord record : parser) {
++                String value = record.get(header);
++                if (value == null) {
++                    continue;
++                }
++                String candidate = value.trim();
++                if (candidate.isEmpty()) {
++                    continue;
++                }
++                if (!isValidHttpUrl(candidate)) {
++                    log.warn("event=CSV_SKIPPED reason=invalid_url url={} row={} path={}",
++                            safeTruncate(candidate, 200), record.getRecordNumber(), csvPath);
++                    continue;
++                }
++                urls.add(candidate);
++            }
++        }
++
++        List<String> deduped = new ArrayList<>(new LinkedHashSet<>(urls));
++        log.info("event=CSV_LOADED path={} header={} total_rows={} unique_urls={}",
++                csvPath.toAbsolutePath(), usedHeaderOrUnknown(header), urls.size(), deduped.size());
++        return deduped;
++    }
++
++    private String usedHeaderOrUnknown(String value) {
++        return (value == null || value.isBlank()) ? "unknown" : value;
++    }
++
++    private Reader bomAwareReader(Path path, Charset cs) throws Exception {
++        var is = Files.newInputStream(path);
++        var pb = new PushbackInputStream(is, 3);
++        byte[] bom = new byte[3];
++        int read = pb.read(bom, 0, bom.length);
++        boolean hasUtf8Bom = read == 3 && (bom[0] & 0xFF) == 0xEF && (bom[1] & 0xFF) == 0xBB && (bom[2] & 0xFF) == 0xBF;
++        if (!hasUtf8Bom && read > 0) {
++            pb.unread(bom, 0, read);
++        }
++        return new BufferedReader(new InputStreamReader(pb, cs));
++    }
++
++    private String pickUrlHeader(Set<String> headers) {
++        if (headers == null || headers.isEmpty()) {
++            throw new IllegalArgumentException("CSV縺ｫURL蛻励′隕九▽縺九ｊ縺ｾ縺帙ｓ");
++        }
++        Map<String, String> lower2orig = new HashMap<>();
++        for (String header : headers) {
++            lower2orig.put(header.toLowerCase(Locale.ROOT), header);
++        }
++
++        for (String candidate : URL_CANDIDATES) {
++            String key = candidate.toLowerCase(Locale.ROOT);
++            if (lower2orig.containsKey(key)) {
++                return lower2orig.get(key);
++            }
++        }
++
++        for (String header : headers) {
++            if (header.toLowerCase(Locale.ROOT).contains("url")) {
++                return header;
++            }
++        }
++        throw new IllegalArgumentException("URL蛻励′隕九▽縺九ｊ縺ｾ縺帙ｓ headers=" + headers);
++    }
++
++    private boolean isValidHttpUrl(String url) {
++        try {
++            URI uri = URI.create(url);
++            String scheme = uri.getScheme();
++            return "http".equalsIgnoreCase(scheme) || "https".equalsIgnoreCase(scheme);
++        } catch (Exception e) {
++            return false;
++        }
++    }
++
++    private String safeTruncate(String value, int max) {
++        if (value == null) {
++            return "";
++        }
++        return value.length() <= max ? value : value.substring(0, max) + "...";
++    }
++}

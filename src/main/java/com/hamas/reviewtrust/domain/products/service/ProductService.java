@@ -1,51 +1,82 @@
-// ProductService.java (placeholder)
 package com.hamas.reviewtrust.domain.products.service;
 
+import com.hamas.reviewtrust.domain.products.dto.ProductListItem;
 import com.hamas.reviewtrust.domain.products.entity.Product;
 import com.hamas.reviewtrust.domain.products.repo.ProductRepository;
+import com.hamas.reviewtrust.domain.reviews.service.ScoreService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * 商品登録/検索/可視性切替の最小サービス。
- * - register(input): URL or ASIN を受け取り正規化・重複除去（idempotent）
- * - list/search: q/visible を受けて最大100件返す
- * - toggleVisibility: 管理用の表示/非表示切替
- * 仕様: /api/products の要件（URL or ASIN登録・検索・visible反映）に準拠。 
+ * 商品登録／検索／可視制御を行うサービス。
+ * - register(input): URL or ASIN を受けて商品を登録（冪等）
+ * - list/search: q/visible を受けて最大100件返却
+ * - toggleVisibility: 管理用の可視制御
+ * 想定: /api/products の入力は URL または ASIN のみで、title/name は後続処理で正式化する。
  */
 @Service
 public class ProductService {
 
     private final ProductRepository repo;
+    private final ScoreService scoreService;
 
-    public ProductService(ProductRepository repo) {
+    public ProductService(ProductRepository repo, ScoreService scoreService) {
         this.repo = repo;
+        this.scoreService = scoreService;
     }
 
-    /** URL or ASIN を受け取り、ASINを抽出して登録（既存なら既存を返す）。 */
+    /** URL or ASIN を受けて ASIN を抽出し登録（存在すれば既存を返す）。 */
     @Transactional
-    public Product register(String input) {
+    public RegistrationResult register(String input) {
         String asin = extractAsin(input);
         if (asin == null) {
             throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "invalid product input");
         }
-        return repo.findByAsin(asin).orElseGet(() -> {
-            String url = canonicalUrl(input, asin);
-            Product p = new Product(null, asin, asin, url, true, null, null);
-            return repo.save(p);
-        });
+
+        String url = canonicalUrl(input, asin);
+        String fallbackLabel = "Auto-" + asin;
+
+        return repo.findByAsin(asin)
+                .map(existing -> {
+                    boolean updated = false;
+                    if (existing.getName() == null || existing.getName().isBlank()) {
+                        existing.setName(fallbackLabel);
+                        updated = true;
+                    }
+                    if (existing.getTitle() == null || existing.getTitle().isBlank()) {
+                        existing.setTitle(fallbackLabel);
+                        updated = true;
+                    }
+                    if (existing.getUrl() == null || existing.getUrl().isBlank()) {
+                        existing.setUrl(url);
+                        updated = true;
+                    }
+                    Product saved = updated ? repo.save(existing) : existing;
+                    return new RegistrationResult(saved, false, updated);
+                })
+                .orElseGet(() -> {
+                    Product p = new Product(null, asin, fallbackLabel, fallbackLabel, url, true, null, null);
+                    Product saved = repo.save(p);
+                    return new RegistrationResult(saved, true, true);
+                });
     }
 
-    /** 検索（最大100件）。q=null なら全件、visible=null で可視性条件なし。 */
+    /** 検索（最大100件）。q=null なら全件、visible=null で絞り込みなし。 */
     @Transactional(readOnly = true)
     public List<Product> list(String q, Boolean visible, int limit) {
         List<Product> base = repo.search(nz(q), visible);
@@ -53,16 +84,52 @@ public class ProductService {
     }
 
     @Transactional(readOnly = true)
-    public Product get(UUID id) {
-        return repo.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "product not found"));
+    public List<Product> findProducts(Boolean visible) {
+        return repo.search(null, visible);
     }
 
-    /** 表示/非表示切替（管理API用）。 */
+    @Transactional(readOnly = true)
+    public List<ProductListItem> findProductSummaries(String query,
+                                                      String tag,
+                                                      Boolean visible,
+                                                      int page,
+                                                      int pageSize) {
+        int safePage = Math.max(0, page);
+        int safeSize = clampPageSize(pageSize);
+        String normalizedQuery = nz(query);
+        String titleQuery = normalizedQuery != null ? "%" + normalizedQuery.toLowerCase(Locale.ROOT) + "%" : null;
+        String asinQuery = normalizedQuery != null ? "%" + normalizedQuery.toUpperCase(Locale.ROOT) + "%" : null;
+        String normalizedTag = normalizeTag(tag);
+
+        Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "updatedAt"));
+        Page<Product> pageResult = repo.searchWithTag(visible, titleQuery, asinQuery, normalizedTag, pageable);
+
+        return pageResult.getContent()
+                .stream()
+                .map(this::toListItem)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Product get(UUID id) {
+        return repo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "product not found"));
+    }
+
+    /** 可視性の切り替え（管理API向け）。 */
     @Transactional
     public Product toggleVisibility(UUID id, boolean visible) {
         Product p = get(id);
         p.setVisible(visible);
         return repo.save(p);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Product> findByAsin(String asin) {
+        if (!StringUtils.hasText(asin)) {
+            return Optional.empty();
+        }
+        return repo.findByAsin(asin.trim());
     }
 
     // --- helpers ---
@@ -71,18 +138,16 @@ public class ProductService {
             "/(?:dp|gp/product|o/ASIN|product-reviews)/([A-Za-z0-9]{10})(?:[/?#]|$)");
     private static final Pattern ASIN_RAW = Pattern.compile("^[A-Za-z0-9]{10}$");
 
-    /** 入力から ASIN を抽出（URL/ASIN生値どちらでもOK）。 */
+    /** 入力文字列から ASIN を抽出（URL/ASIN いずれでも可）。 */
     private String extractAsin(String input) {
         if (input == null) return null;
         String s = input.trim();
         if (s.isEmpty()) return null;
 
-        // 生のASIN
         if (ASIN_RAW.matcher(s).matches()) {
             return s.toUpperCase();
         }
 
-        // URL から抽出
         try {
             URI uri = URI.create(s);
             String path = Optional.ofNullable(uri.getPath()).orElse("");
@@ -90,7 +155,6 @@ public class ProductService {
             if (m.find()) return m.group(1).toUpperCase();
         } catch (Exception ignore) { /* not a URL */ }
 
-        // 雑に含まれていないかも一応チェック
         Matcher any = Pattern.compile("([A-Za-z0-9]{10})").matcher(s);
         if (any.find()) return any.group(1).toUpperCase();
 
@@ -105,11 +169,33 @@ public class ProductService {
                 return "https://" + host + "/dp/" + asin;
             }
         } catch (Exception ignore) { /* not a URL */ }
-        // ASINのみの登録なら汎用の日本向けURLに正規化
         return "https://www.amazon.co.jp/dp/" + asin;
     }
 
     private String nz(String s) {
-        return (s == null || s.isBlank()) ? null : s;
+        if (s == null) return null;
+        String trimmed = s.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
+
+    private String normalizeTag(String value) {
+        String trimmed = nz(value);
+        return trimmed != null ? trimmed.toLowerCase(Locale.ROOT) : null;
+    }
+
+    private int clampPageSize(int requested) {
+        if (requested < 1) {
+            return 1;
+        }
+        return Math.min(requested, 200);
+    }
+
+    private ProductListItem toListItem(Product product) {
+        var productScore = scoreService.getCachedScore(product.getId());
+        double scoreValue = productScore != null ? productScore.score() : 0.0;
+        String rank = productScore != null && productScore.rank() != null ? productScore.rank() : "A";
+        return ProductListItem.from(product, scoreValue, rank);
+    }
+
+    public record RegistrationResult(Product product, boolean created, boolean updated) { }
 }

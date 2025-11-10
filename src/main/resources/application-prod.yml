@@ -1,1 +1,11 @@
-# application-prod.yml (placeholder)
+scraping:
+  amazon:
+    enableBrowserLogin: false
+    headless: true
+    storageStatePath: "/opt/amazon_state.json"
+
+app:
+  scraping:
+    headless: true
+    enable-browser-login: false
+    storage-state-path: "/opt/amazon_state.json"
