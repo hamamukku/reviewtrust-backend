@@ -6,11 +6,6 @@
       "sourceType": "com.hamas.reviewtrust.config.ScrapingProperties"
     },
     {
-      "name": "app.scraping",
-      "type": "com.hamas.reviewtrust.scraping.ScrapingProps",
-      "sourceType": "com.hamas.reviewtrust.scraping.ScrapingProps"
-    },
-    {
       "name": "intake.local",
       "type": "com.hamas.reviewtrust.config.LocalIntakeProperties",
       "sourceType": "com.hamas.reviewtrust.config.LocalIntakeProperties"
@@ -34,22 +29,10 @@
       "sourceType": "com.hamas.reviewtrust.config.ScrapingProperties"
     },
     {
-      "name": "app.scraping.amazon-email",
-      "type": "java.lang.String",
-      "description": "Amazon login email\/username.",
-      "sourceType": "com.hamas.reviewtrust.scraping.ScrapingProps"
-    },
-    {
       "name": "app.scraping.amazon-password",
       "type": "java.lang.String",
       "description": "Amazon ログインパスワード（既定 空文字）",
       "sourceType": "com.hamas.reviewtrust.config.ScrapingProperties"
-    },
-    {
-      "name": "app.scraping.amazon-password",
-      "type": "java.lang.String",
-      "description": "Amazon login password.",
-      "sourceType": "com.hamas.reviewtrust.scraping.ScrapingProps"
     },
     {
       "name": "app.scraping.base-url",
@@ -62,12 +45,6 @@
       "type": "java.lang.String",
       "description": "Playwright チャネル（chrome\/msedge 等）。空欄ならランタイムの既定値を使用。",
       "sourceType": "com.hamas.reviewtrust.config.ScrapingProperties"
-    },
-    {
-      "name": "app.scraping.channel",
-      "type": "java.lang.String",
-      "description": "Optional Playwright browser channel (e.g. {@code chrome}, {@code msedge}).",
-      "sourceType": "com.hamas.reviewtrust.scraping.ScrapingProps"
     },
     {
       "name": "app.scraping.cookie-string",
@@ -106,22 +83,10 @@
       "sourceType": "com.hamas.reviewtrust.config.ScrapingProperties"
     },
     {
-      "name": "app.scraping.enabled",
-      "type": "java.lang.Boolean",
-      "description": "Enable or disable the scraping runner entirely.",
-      "sourceType": "com.hamas.reviewtrust.scraping.ScrapingProps"
-    },
-    {
       "name": "app.scraping.headless",
       "type": "java.lang.Boolean",
       "description": "ヘッドレスモードで起動するか（既定 true）",
       "sourceType": "com.hamas.reviewtrust.config.ScrapingProperties"
-    },
-    {
-      "name": "app.scraping.headless",
-      "type": "java.lang.Boolean",
-      "description": "Launch Playwright in headless mode (default false to allow first-run login).",
-      "sourceType": "com.hamas.reviewtrust.scraping.ScrapingProps"
     },
     {
       "name": "app.scraping.locale",
