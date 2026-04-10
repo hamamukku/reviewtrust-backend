@@ -3,11 +3,13 @@ package com.hamas.reviewtrust.api.admin.v1;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hamas.reviewtrust.domain.accounts.entity.AdminUser;
 import com.hamas.reviewtrust.domain.accounts.repo.AdminUserRepository;
+import com.hamas.reviewtrust.domain.products.service.LocalProductIntakeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -27,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.jpa.show-sql=false",
         "spring.flyway.enabled=false",
+        "scrape.playwright.enabled=false",
         "security.jwt.secret=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
         "logging.level.org.springframework.security=INFO"
 })
@@ -43,6 +46,9 @@ class AdminLoginIntegrationTest {
 
     @Autowired
     ObjectMapper objectMapper;
+
+    @MockBean
+    LocalProductIntakeService localProductIntakeService;
 
     @BeforeEach
     void setUp() {

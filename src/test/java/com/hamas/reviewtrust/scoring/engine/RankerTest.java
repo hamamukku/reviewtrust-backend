@@ -1,7 +1,7 @@
 package com.hamas.reviewtrust.scoring.engine;
 
-import com.hamas.reviewtrust.domain.scoring.catalog.ScoreModels;
 import com.hamas.reviewtrust.domain.scoring.engine.Ranker;
+import com.hamas.reviewtrust.domain.scoring.catalog.ScoreModels;
 import com.hamas.reviewtrust.domain.scoring.profile.ThresholdProvider;
 import org.junit.jupiter.api.Test;
 
@@ -11,12 +11,12 @@ public class RankerTest {
 
     @Test
     void assignUsesNewBoundaries() {
-        assertEquals(ScoreModels.Rank.A, Ranker.assign(0));
-        assertEquals(ScoreModels.Rank.A, Ranker.assign(34));
-        assertEquals(ScoreModels.Rank.B, Ranker.assign(35));
-        assertEquals(ScoreModels.Rank.B, Ranker.assign(64));
-        assertEquals(ScoreModels.Rank.C, Ranker.assign(65));
-        assertEquals(ScoreModels.Rank.C, Ranker.assign(100));
+        assertEquals(Ranker.Rank.A, Ranker.assign(0));
+        assertEquals(Ranker.Rank.A, Ranker.assign(34));
+        assertEquals(Ranker.Rank.B, Ranker.assign(35));
+        assertEquals(Ranker.Rank.B, Ranker.assign(64));
+        assertEquals(Ranker.Rank.C, Ranker.assign(65));
+        assertEquals(Ranker.Rank.C, Ranker.assign(100));
     }
 
     @Test

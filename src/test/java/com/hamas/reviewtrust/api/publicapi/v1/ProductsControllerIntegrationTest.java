@@ -2,17 +2,17 @@ package com.hamas.reviewtrust.api.publicapi.v1;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hamas.reviewtrust.domain.products.entity.Product;
+import com.hamas.reviewtrust.domain.products.service.LocalProductIntakeService;
 import com.hamas.reviewtrust.domain.products.service.ProductService;
 import com.hamas.reviewtrust.domain.scraping.service.ScrapingService;
-import com.hamas.reviewtrust.domain.scoring.engine.ScoreService;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -29,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@TestPropertySource(properties = "scrape.playwright.enabled=false")
 public class ProductsControllerIntegrationTest {
 
     @Autowired
@@ -44,7 +45,7 @@ public class ProductsControllerIntegrationTest {
     private ScrapingService scrapingService;
 
     @MockBean
-    private ScoreService scoreService;
+    private LocalProductIntakeService localProductIntakeService;
 
     @Test
     @WithMockUser(roles = "ADMIN")

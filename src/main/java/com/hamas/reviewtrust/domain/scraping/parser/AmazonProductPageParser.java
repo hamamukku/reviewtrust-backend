@@ -29,6 +29,10 @@ public class AmazonProductPageParser {
     private static final ObjectMapper JSON = new ObjectMapper();
 
     private static final String[] PRICE_SELECTORS = {
+            "#tp_price_block_total_price_ww .a-offscreen",
+            "#tp-tool-tip-subtotal-price-value .a-offscreen",
+            "#pqv-price + p .a-text-bold",
+            "#pqv-price ~ p .a-text-bold",
             "#corePriceDisplay_desktop_feature_div .a-offscreen",
             "#corePriceDisplay_desktop_feature_div span[data-a-color=\"price\"] span.a-offscreen",
             "#priceblock_ourprice",
@@ -47,7 +51,9 @@ public class AmazonProductPageParser {
     };
 
     private static final String[] INLINE_REVIEW_SELECTORS = {
+            "#cm-cr-dp-review-list li[data-hook=\"review\"]",
             "#cm-cr-dp-review-list div[data-hook=\"review\"]",
+            "#reviewsMedley li[data-hook=\"review\"]",
             "#reviewsMedley div[data-hook=\"review\"]"
     };
 
@@ -151,6 +157,13 @@ public class AmazonProductPageParser {
     }
 
     private Long extractPrice(Document document) {
+        Element hiddenTwisterPrice = document.selectFirst("input#twister-plus-price-data-price[value]");
+        if (hiddenTwisterPrice != null) {
+            Long parsed = TextNormalizer.parseYenToMinor(hiddenTwisterPrice.attr("value"));
+            if (parsed != null) {
+                return parsed;
+            }
+        }
         for (String selector : PRICE_SELECTORS) {
             Element element = document.selectFirst(selector);
             if (element != null) {
@@ -333,6 +346,9 @@ public class AmazonProductPageParser {
                 Integer stars = ratingValue != null ? clampStars((int) Math.round(ratingValue)) : null;
 
                 Element verifiedElement = block.selectFirst("[data-hook=avp-badge]");
+                if (verifiedElement == null) {
+                    verifiedElement = block.selectFirst("[data-hook=avp-badge-linkless]");
+                }
                 if (verifiedElement == null) {
                     verifiedElement = block.selectFirst("span:matches((?i)Amazon.*購入)");
                 }

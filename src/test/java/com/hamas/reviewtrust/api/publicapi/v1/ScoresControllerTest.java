@@ -1,6 +1,7 @@
 package com.hamas.reviewtrust.api.publicapi.v1;
 
 import com.hamas.reviewtrust.api.publicapi.v1.dto.ProductScoreResponse;
+import com.hamas.reviewtrust.config.SecurityConfig;
 import com.hamas.reviewtrust.domain.products.entity.Product;
 import com.hamas.reviewtrust.domain.products.service.ProductScoreService;
 import com.hamas.reviewtrust.domain.products.service.ProductService;
@@ -11,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
@@ -24,7 +27,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(ScoresController.class)
+@Import(SecurityConfig.class)
 @ActiveProfiles("test")
+@TestPropertySource(properties = "security.jwt.secret=0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 class ScoresControllerTest {
 
     @Autowired
