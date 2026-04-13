@@ -1,7 +1,6 @@
 // src/main/java/com/hamas/reviewtrust/domain/scoring/catalog/ScoreModels.java
 package com.hamas.reviewtrust.domain.scoring.catalog;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 

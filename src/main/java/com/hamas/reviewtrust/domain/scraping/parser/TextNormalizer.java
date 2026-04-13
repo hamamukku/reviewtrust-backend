@@ -1,8 +1,6 @@
 package com.hamas.reviewtrust.domain.scraping.parser;
 
-import java.math.BigDecimal;
 import java.text.Normalizer;
-import java.util.Locale;
 
 public final class TextNormalizer {
 

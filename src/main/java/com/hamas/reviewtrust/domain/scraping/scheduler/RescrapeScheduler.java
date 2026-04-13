@@ -1,23 +1,15 @@
 package com.hamas.reviewtrust.domain.scraping.scheduler;
 
-import com.hamas.reviewtrust.domain.scraping.service.ScrapingService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.Locale;
-
 @Component
 @ConditionalOnProperty(value = "app.scraping.scheduler.enabled", havingValue = "true", matchIfMissing = false)
 public class RescrapeScheduler {
     private static final Logger log = LoggerFactory.getLogger(RescrapeScheduler.class);
-    private final ScrapingService service;
-
-    public RescrapeScheduler(ScrapingService service) {
-        this.service = service;
-    }
 
     /**
      * 毎日 03:00（サーバローカル時刻）に実行。
